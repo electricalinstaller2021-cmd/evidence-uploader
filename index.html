@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Upload & Auto-Folder Google Drive Evidence Proyek</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter & Lucide Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col selection:bg-blue-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-2 rounded-xl text-white shadow-md shadow-blue-200 flex items-center justify-center">
+                    <i data-lucide="hard-drive" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-900 leading-tight">Project Drive Sync</h1>
+                    <p class="text-xs text-slate-500">Auto-Folder Cloud Storage per Proyek & Kategori</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="switchTab('upload')" id="tab-btn-upload" class="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white transition shadow-sm hover:bg-blue-700 flex items-center space-x-2">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                    <span>Upload Evidence</span>
+                </button>
+                <button onclick="switchTab('drive')" id="tab-btn-drive" class="px-4 py-2 text-sm font-medium rounded-lg bg-white text-slate-700 border border-slate-300 transition hover:bg-slate-50 flex items-center space-x-2">
+                    <i data-lucide="folder-tree" class="w-4 h-4"></i>
+                    <span>Drive Manager (<span id="evidence-count">0</span>)</span>
+                </button>
+                <button onclick="openApiModal()" id="tab-btn-connect" class="px-3.5 py-2 text-sm font-medium rounded-lg bg-emerald-600 text-white transition shadow-sm hover:bg-emerald-700 flex items-center space-x-2">
+                    <i data-lucide="link" class="w-4 h-4"></i>
+                    <span id="drive-status-text">Hubungkan Drive</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Body Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
+
+        <!-- TAB 1: UPLOAD & FORM -->
+        <section id="view-upload" class="space-y-6 animate-fade-in">
+            <!-- Welcome Banner -->
+            <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute right-0 bottom-0 translate-x-8 translate-y-8 opacity-10 pointer-events-none">
+                    <i data-lucide="cloud" class="w-64 h-64"></i>
+                </div>
+                <div class="max-w-2xl relative z-10">
+                    <span class="bg-blue-500/30 text-blue-200 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wider inline-block mb-3">Google Drive Integration v3.0</span>
+                    <h2 class="text-2xl sm:text-3xl font-bold tracking-tight mb-2">Simpan & Auto-Organisir ke Drive</h2>
+                    <p class="text-blue-200 text-sm leading-relaxed">
+                        Unggah foto atau video lapangan. Sistem akan otomatis membuatkan hierarki folder di Drive: <code class="bg-blue-950 px-2 py-0.5 rounded text-blue-300 font-mono">/Proyek/Kategori/File</code> tanpa perlu repot menyusun manual.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Upload Form Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left 2 Cols: Form Input -->
+                <div class="lg:col-span-2 bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+                    <div class="border-b border-slate-100 pb-4">
+                        <h3 class="text-lg font-semibold text-slate-900 flex items-center space-x-2">
+                            <i data-lucide="file-plus" class="w-5 h-5 text-blue-600"></i>
+                            <span>Formulir Pengunggahan Cloud</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Tentukan Nama Proyek dan Kategori untuk struktur folder otomatis.</p>
+                    </div>
+
+                    <form id="evidence-form" onsubmit="handleFormSubmit(event)" class="space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <!-- Project ID / Code -->
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Nama / Kode Proyek (Folder Utama) <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <i data-lucide="folder" class="w-4 h-4"></i>
+                                    </span>
+                                    <input type="text" id="proj-code" required placeholder="Contoh: LTL7, PRJ-A01, JKT-02" 
+                                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition">
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">Otomatis membuat folder utama dengan nama ini di Drive.</span>
+                            </div>
+
+                            <!-- Category -->
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Kategori / Sub-Folder <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <i data-lucide="folder-tree" class="w-4 h-4"></i>
+                                    </span>
+                                    <select id="proj-category" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition appearance-none">
+                                        <option value="">-- Pilih Sub-Folder Kategori --</option>
+                                        <option value="Progress Konstruksi">Progress Konstruksi</option>
+                                        <option value="HSE & Safety Check">HSE & Safety Check</option>
+                                        <option value="Inspeksi Material">Inspeksi Material</option>
+                                        <option value="Quality Control (QC)">Quality Control (QC)</option>
+                                        <option value="Dokumentasi Drone/Aerial">Dokumentasi Drone/Aerial</option>
+                                        <option value="Berita Acara / Surat Jalan">Berita Acara / Surat Jalan</option>
+                                        <option value="Lainnya">Lainnya</option>
+                                    </select>
+                                </div>
+                                <span class="text-[11px] text-slate-400 mt-1 block">Menjadi sub-folder di dalam direktori proyek.</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <!-- Sender / Reporter -->
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Nama Pengirim / PIC <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <i data-lucide="user" class="w-4 h-4"></i>
+                                    </span>
+                                    <input type="text" id="sender-name" required placeholder="Contoh: Budi Santoso (Site Eng)" 
+                                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition">
+                                </div>
+                            </div>
+
+                            <!-- Location / Zone -->
+                            <div>
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Lokasi / Zona Detail</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                    </span>
+                                    <input type="text" id="proj-location" placeholder="Contoh: Lantai 3 - Zona B" 
+                                        class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description / Note -->
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Keterangan / Catatan Bukti</label>
+                            <textarea id="proj-desc" rows="3" placeholder="Tuliskan detail temuan atau progres pekerjaan..." 
+                                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition resize-none"></textarea>
+                        </div>
+
+                        <!-- File Drop Zone -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-600">File Evidence (Foto / Video) <span class="text-red-500">*</span></label>
+                                <div class="flex items-center space-x-2">
+                                    <button type="button" onclick="openCameraModal()" class="px-2.5 py-1 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium rounded-lg transition flex items-center space-x-1">
+                                        <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                                        <span>Buka Kamera</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center hover:border-blue-500 transition bg-slate-50/50 cursor-pointer relative">
+                                <input type="file" id="media-file" required accept="image/*,video/*" onchange="handleFileSelect(event)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                <div id="dropzone-content" class="space-y-2 pointer-events-none">
+                                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                                        <i data-lucide="cloud-upload" class="w-6 h-6"></i>
+                                    </div>
+                                    <p class="text-sm font-medium text-slate-700">Klik untuk upload atau seret file ke sini</p>
+                                    <p class="text-xs text-slate-400">Mendukung format: JPG, PNG, WEBP, MP4, MKV (Maks. 50MB)</p>
+                                </div>
+                                <div id="file-preview-container" class="hidden flex items-center justify-between bg-white p-3 rounded-xl border border-slate-200 shadow-sm relative z-20">
+                                    <div class="flex items-center space-x-3 truncate">
+                                        <div id="preview-thumb" class="w-12 h-12 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center"></div>
+                                        <div class="text-left truncate">
+                                            <p id="preview-name" class="text-sm font-semibold text-slate-800 truncate"></p>
+                                            <p id="preview-size" class="text-xs text-slate-400"></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="clearFile(event)" class="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100 transition">
+                                        <i data-lucide="x" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="pt-2">
+                            <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-200 transition flex items-center justify-center space-x-2">
+                                <i data-lucide="upload" class="w-5 h-5"></i>
+                                <span>Simpan ke Google Drive (Auto-Folder)</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Right Col: Quick Tips & Recent Stream -->
+                <div class="space-y-6">
+                    <!-- Guidelines Card -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                        <h4 class="font-semibold text-slate-900 flex items-center space-x-2">
+                            <i data-lucide="info" class="w-5 h-5 text-blue-500"></i>
+                            <span>Mekanisme Auto-Folder Drive</span>
+                        </h4>
+                        <ul class="space-y-3 text-xs text-slate-600">
+                            <li class="flex items-start space-x-2">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+                                <span><strong>Struktur Otomatis:</strong> File dikelompokkan ke direktori <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600 font-mono">My Drive / [Proyek] / [Kategori]</code>.</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+                                <span><strong>Metadata Terlampir:</strong> Nama pengirim, lokasi, dan catatan disimpan sebagai properti file di Drive.</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+                                <span><strong>Akses Cepat:</strong> Cek tab Drive Manager untuk menjelajahi folder layaknya Google Drive asli.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Recent Activity Summary -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-semibold text-slate-900 flex items-center space-x-2">
+                                <i data-lucide="activity" class="w-5 h-5 text-blue-500"></i>
+                                <span>Upload Terbaru ke Drive</span>
+                            </h4>
+                            <button onclick="switchTab('drive')" class="text-xs text-blue-600 font-medium hover:underline">Buka Drive</button>
+                        </div>
+                        <div id="recent-uploads-list" class="space-y-3">
+                            <!-- Populated dynamically -->
+                            <div class="text-center py-6 text-slate-400 text-xs italic">Belum ada file di Drive.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: DRIVE MANAGER VIEW -->
+        <section id="view-drive" class="hidden space-y-6 animate-fade-in">
+            <!-- Drive Header & Controls -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-amber-500 p-2.5 rounded-xl text-white shadow-md shadow-amber-200">
+                        <i data-lucide="folder-git-2" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-900 flex items-center space-x-2">
+                            <span id="drive-title-mode">Google Drive Storage Explorer (Local Sync)</span>
+                            <span id="drive-badge-mode" class="bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-md">Demo Mode</span>
+                        </h3>
+                        <p class="text-xs text-slate-500">Navigasi folder otomatis berdasarkan Nama Proyek dan Kategori Evidence.</p>
+                    </div>
+                </div>
+
+                <!-- Action Toolbar -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Search Filter -->
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </span>
+                        <input type="text" id="drive-search" oninput="renderDriveExplorer()" placeholder="Cari file atau folder..." 
+                            class="pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none transition w-48 sm:w-60">
+                    </div>
+
+                    <!-- Reset Data -->
+                    <button onclick="resetData()" title="Reset Data Demo" class="p-2 bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600 rounded-xl transition">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Breadcrumb Navigation Bar -->
+            <div class="bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-2 text-xs text-slate-600">
+                <button onclick="goToRoot()" class="flex items-center space-x-1 hover:text-blue-600 font-medium">
+                    <i data-lucide="hard-drive" class="w-4 h-4"></i>
+                    <span>My Drive</span>
+                </button>
+                <div id="breadcrumb-container" class="flex items-center space-x-2">
+                    <!-- Dynamic breadcrumb injected here -->
+                </div>
+            </div>
+
+            <!-- Drive Explorer Grid Container -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm min-h-[400px]">
+                <div id="drive-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Media Modal Preview -->
+    <div id="media-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl animate-fade-in">
+            <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div>
+                    <h3 id="modal-title" class="font-bold text-slate-900 text-base">Detail File Drive</h3>
+                    <p id="modal-subtitle" class="text-xs text-slate-500"></p>
+                </div>
+                <button onclick="closeModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 bg-slate-900 flex items-center justify-center min-h-[300px] max-h-[60vh] overflow-hidden" id="modal-content-area">
+                <!-- Image or Video preview injected here -->
+            </div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+                <span id="modal-meta" class="text-slate-500"></span>
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-xl transition">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Drive API Integration Modal -->
+    <div id="api-modal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl animate-fade-in">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-emerald-50">
+                <div class="flex items-center space-x-2">
+                    <i data-lucs="hard-drive" class="w-5 h-5 text-emerald-600"></i>
+                    <h3 class="font-bold text-slate-900 text-base">Koneksi Akun Google Drive Pribadi</h3>
+                </div>
+                <button onclick="closeApiModal()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-xs text-slate-600">
+                <p class="leading-relaxed">
+                    Agar file tersimpan otomatis langsung ke Google Drive Anda, hubungkan menggunakan <strong>Google Cloud API OAuth Client ID</strong> atau gunakan metode Apps Script Webhook.
+                </p>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block font-semibold uppercase tracking-wider text-slate-700 mb-1">Google OAuth Client ID / Webhook URL</label>
+                        <input type="text" id="api-client-id" placeholder="https://script.google.com/macros/s/.../exec" 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:bg-white focus:outline-none font-mono text-[11px]">
+                        <span class="text-[10px] text-slate-400 mt-1 block">Masukkan URL Web App Google Apps Script untuk integrasi real file.</span>
+                    </div>
+                </div>
+                <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 space-y-2">
+                    <h4 class="font-bold text-emerald-900">Panduan Ringkas Setup Google Apps Script:</h4>
+                    <ol class="list-decimal pl-4 space-y-1 text-[11px] text-emerald-800">
+                        <li>Buka <a href="https://script.google.com" target="_blank" class="underline font-semibold">script.google.com</a> dan buat proyek baru.</li>
+                        <li>Gunakan fungsi skrip penerima file base64 untuk otomatis membuat folder <code class="bg-emerald-100 px-1 rounded">Proyek/Kategori</code> di Drive Anda.</li>
+                        <li>Deploy sebagai <em>Web App</em> (akses: "Anyone") lalu tempel URL-nya di atas.</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-3">
+                <button onclick="closeApiModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-xl transition">Batal</button>
+                <button onclick="saveApiConfig()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition shadow-sm">Simpan & Hubungkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Camera Modal -->
+    <div id="camera-modal" class="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-xl w-full overflow-hidden shadow-2xl animate-fade-in flex flex-col">
+            <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="camera" class="w-5 h-5 text-blue-400"></i>
+                    <h3 class="font-bold text-sm">Ambil Foto Langsung dari Kamera</h3>
+                </div>
+                <button onclick="closeCameraModal()" class="p-1.5 text-slate-400 hover:text-white rounded-lg transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 bg-slate-950 flex flex-col items-center justify-center relative min-h-[320px]">
+                <!-- Video Stream Element -->
+                <video id="camera-stream" autoplay playsinline class="w-full max-h-[50vh] object-contain rounded-xl bg-black"></video>
+                <canvas id="camera-canvas" class="hidden"></canvas>
+            </div>
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button type="button" onclick="closeCameraModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-xl transition">Batal</button>
+                <button type="button" onclick="capturePhoto()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-xl shadow-md shadow-blue-200 transition flex items-center space-x-2">
+                    <i data-lucide="aperture" class="w-4 h-4"></i>
+                    <span>Jepret Foto</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center space-x-3 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-xl">
+        <div id="toast-icon"></div>
+        <div>
+            <p id="toast-title" class="font-semibold text-sm"></p>
+            <p id="toast-desc" class="text-xs text-slate-300"></p>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // State Management for Drive
+        let evidences = JSON.parse(localStorage.getItem('drive_project_evidences') || '[]');
+        let driveWebhookUrl = localStorage.getItem('drive_webhook_url') || '';
+        let currentFileBase64 = null;
+        let currentFileType = null;
+        let currentFileName = null;
+        let videoStream = null;
+
+        // Drive Navigation State
+        let currentProjectFolder = null; // null = root, string = project name
+        let currentCategoryFolder = null; // null = project root, string = category name
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initDemoDataIfNeeded();
+            updateStats();
+            renderRecentUploads();
+            renderDriveExplorer();
+            checkDriveConnectionStatus();
+        });
+
+        function checkDriveConnectionStatus() {
+            const btnText = document.getElementById('drive-status-text');
+            const titleMode = document.getElementById('drive-title-mode');
+            const badgeMode = document.getElementById('drive-badge-mode');
+
+            if (driveWebhookUrl) {
+                btnText.textContent = "Drive Terhubung";
+                document.getElementById('tab-btn-connect').className = "px-3.5 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white transition shadow-sm hover:bg-blue-700 flex items-center space-x-2";
+                titleMode.textContent = "Google Drive Storage Explorer (Cloud Live)";
+                badgeMode.className = "bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-md";
+                badgeMode.textContent = "Live Connected";
+            } else {
+                btnText.textContent = "Hubungkan Drive";
+                document.getElementById('tab-btn-connect').className = "px-3.5 py-2 text-sm font-medium rounded-lg bg-emerald-600 text-white transition shadow-sm hover:bg-emerald-700 flex items-center space-x-2";
+                titleMode.textContent = "Google Drive Storage Explorer (Local Sync)";
+                badgeMode.className = "bg-amber-100 text-amber-700 text-xs font-semibold px-2 py-0.5 rounded-md";
+                badgeMode.textContent = "Demo Mode";
+            }
+        }
+
+        function openApiModal() {
+            document.getElementById('api-client-id').value = driveWebhookUrl;
+            document.getElementById('api-modal').classList.remove('hidden');
+        }
+
+        function closeApiModal() {
+            document.getElementById('api-modal').classList.add('hidden');
+        }
+
+        function saveApiConfig() {
+            const url = document.getElementById('api-client-id').value.trim();
+            driveWebhookUrl = url;
+            localStorage.setItem('drive_webhook_url', url);
+            closeApiModal();
+            checkDriveConnectionStatus();
+            showToast('Konfigurasi Disimpan', url ? 'Aplikasi terhubung ke Google Drive Webhook endpoint.' : 'Mode demo lokal diaktifkan.', 'success');
+        }
+
+        // Seed initial demo data if empty so Drive looks populated immediately
+        function initDemoDataIfNeeded() {
+            if (evidences.length === 0) {
+                evidences = [
+                    {
+                        id: 'DRV-1001',
+                        timestamp: '2026-10-11 08:30:15',
+                        project: 'LTL7',
+                        category: 'Progress Konstruksi',
+                        sender: 'Ahmad Fauzi (Civil Lead)',
+                        location: 'Zona Utama - Sektor A',
+                        description: 'Pengecoran lantai dasar tahap 2 selesai dikerjakan.',
+                        fileName: 'pondasi_ltl7.jpg',
+                        fileType: 'image',
+                        fileData: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f86f8?auto=format&fit=crop&w=800&q=80'
+                    },
+                    {
+                        id: 'DRV-1002',
+                        timestamp: '2026-10-11 09:15:40',
+                        project: 'LTL7',
+                        category: 'HSE & Safety Check',
+                        sender: 'Siti Rahma (HSE Officer)',
+                        location: 'Gerbang Masuk Proyek',
+                        description: 'Briefing pagi dan pengecekan APD lengkap seluruh pekerja.',
+                        fileName: 'hse_briefing_ltl7.jpg',
+                        fileType: 'image',
+                        fileData: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=800&q=80'
+                    },
+                    {
+                        id: 'DRV-1003',
+                        timestamp: '2026-10-11 10:05:22',
+                        project: 'PRJ-JKT02',
+                        category: 'Inspeksi Material',
+                        sender: 'Rian Pratama (QA/QC)',
+                        location: 'Gudang Utama',
+                        description: 'Kedatangan besi beton SNI 16mm sebanyak 5 ton.',
+                        fileName: 'material_besi.jpg',
+                        fileType: 'image',
+                        fileData: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80'
+                    }
+                ];
+                saveData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('drive_project_evidences', JSON.stringify(evidences));
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('evidence-count').textContent = evidences.length;
+        }
+
+        // Tab Navigation
+        function switchTab(tabName) {
+            const uploadView = document.getElementById('view-upload');
+            const driveView = document.getElementById('view-drive');
+            const btnUpload = document.getElementById('tab-btn-upload');
+            const btnDrive = document.getElementById('tab-btn-drive');
+
+            if (tabName === 'upload') {
+                uploadView.classList.remove('hidden');
+                driveView.classList.add('hidden');
+                btnUpload.className = "px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white transition shadow-sm hover:bg-blue-700 flex items-center space-x-2";
+                btnDrive.className = "px-4 py-2 text-sm font-medium rounded-lg bg-white text-slate-700 border border-slate-300 transition hover:bg-slate-50 flex items-center space-x-2";
+            } else {
+                uploadView.classList.add('hidden');
+                driveView.classList.remove('hidden');
+                btnDrive.className = "px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 text-white transition shadow-sm hover:bg-amber-700 flex items-center space-x-2";
+                btnUpload.className = "px-4 py-2 text-sm font-medium rounded-lg bg-white text-slate-700 border border-slate-300 transition hover:bg-slate-50 flex items-center space-x-2";
+                renderDriveExplorer();
+            }
+        }
+
+        // File Selection & Base64 Converter
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 50 * 1024 * 1024) {
+                showToast('Gagal Upload', 'Ukuran file terlalu besar (Maksimal 50MB).', 'error');
+                return;
+            }
+
+            currentFileName = file.name;
+            currentFileType = file.type.startsWith('video') ? 'video' : 'image';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                currentFileBase64 = e.target.result;
+                showFilePreview(file.name, file.size, currentFileBase64, currentFileType);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Live Camera Capture Functions
+        async function openCameraModal() {
+            const modal = document.getElementById('camera-modal');
+            modal.classList.remove('hidden');
+            const videoElement = document.getElementById('camera-stream');
+
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' },
+                    audio: false
+                });
+                videoElement.srcObject = videoStream;
+            } catch (err) {
+                console.error('Camera access error:', err);
+                modal.classList.add('hidden');
+                showToast('Akses Kamera Ditolak', 'Pastikan izin kamera diizinkan pada browser Anda.', 'error');
+            }
+        }
+
+        function closeCameraModal() {
+            const modal = document.getElementById('camera-modal');
+            modal.classList.add('hidden');
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+        }
+
+        function capturePhoto() {
+            const videoElement = document.getElementById('camera-stream');
+            const canvas = document.getElementById('camera-canvas');
+            
+            if (!videoStream) return;
+
+            canvas.width = videoElement.videoWidth || 1280;
+            canvas.height = videoElement.videoHeight || 720;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+            currentFileBase64 = canvas.toDataURL('image/jpeg', 0.85);
+            currentFileType = 'image';
+            currentFileName = 'camera_capture_' + Date.now() + '.jpg';
+
+            closeCameraModal();
+            showFilePreview(currentFileName, Math.round(currentFileBase64.length * 0.75), currentFileBase64, currentFileType);
+            showToast('Berhasil Jepret', 'Foto dari kamera berhasil diambil sebagai evidence.', 'success');
+        }
+
+        function showFilePreview(name, size, data, type) {
+            document.getElementById('dropzone-content').classList.add('hidden');
+            const previewContainer = document.getElementById('file-preview-container');
+            previewContainer.classList.remove('hidden');
+
+            document.getElementById('preview-name').textContent = name;
+            document.getElementById('preview-size').textContent = (size / (1024 * 1024)).toFixed(2) + ' MB';
+
+            const thumb = document.getElementById('preview-thumb');
+            if (type === 'image') {
+                thumb.innerHTML = `<img src="${data}" class="w-full h-full object-cover">`;
+            } else {
+                thumb.innerHTML = `<div class="bg-blue-100 text-blue-600 w-full h-full flex items-center justify-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></div>`;
+            }
+        }
+
+        function clearFile(event) {
+            if (event) event.stopPropagation();
+            currentFileBase64 = null;
+            currentFileType = null;
+            currentFileName = null;
+            document.getElementById('media-file').value = '';
+            document.getElementById('dropzone-content').classList.remove('hidden');
+            document.getElementById('file-preview-container').classList.add('hidden');
+            document.getElementById('preview-thumb').innerHTML = '';
+        }
+
+        // Handle Form Submit
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+
+            if (!currentFileBase64) {
+                showToast('File Diperlukan', 'Silakan pilih foto atau video evidence terlebih dahulu.', 'error');
+                return;
+            }
+
+            const projectCode = document.getElementById('proj-code').value.trim().toUpperCase();
+            const category = document.getElementById('proj-category').value;
+            const sender = document.getElementById('sender-name').value.trim();
+            const location = document.getElementById('proj-location').value.trim() || '-';
+            const description = document.getElementById('proj-desc').value.trim() || '-';
+
+            const now = new Date();
+            const timestamp = now.toISOString().slice(0, 19).replace('T', ' ');
+
+            const newEvidence = {
+                id: 'DRV-' + Math.floor(1000 + Math.random() * 9000),
+                timestamp,
+                project: projectCode,
+                category,
+                sender,
+                location,
+                description,
+                fileName: currentFileName,
+                fileType: currentFileType,
+                fileData: currentFileBase64
+            };
+
+            // If Google Drive Webhook URL is configured, send data to Drive
+            if (driveWebhookUrl) {
+                try {
+                    showToast('Mengirim ke Drive', 'Sedang membuat folder otomatis dan mengunggah ke Google Drive...', 'success');
+                    await fetch(driveWebhookUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newEvidence)
+                    });
+                } catch (err) {
+                    console.error('Drive webhook error:', err);
+                }
+            }
+
+            evidences.unshift(newEvidence);
+            saveData();
+            renderRecentUploads();
+
+            // Reset form
+            document.getElementById('evidence-form').reset();
+            clearFile();
+
+            showToast('Berhasil Disimpan!', `File otomatis masuk ke folder Drive: /${projectCode}/${category}/`, 'success');
+        }
+
+        // Recent Uploads List Sidebar
+        function renderRecentUploads() {
+            const container = document.getElementById('recent-uploads-list');
+            if (evidences.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs italic">Belum ada file di Drive.</div>`;
+                return;
+            }
+
+            container.innerHTML = evidences.slice(0, 3).map(item => `
+                <div class="flex items-center space-x-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 transition">
+                    <div class="w-10 h-10 rounded-lg bg-slate-200 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                        ${item.fileType === 'image' ? `<img src="${item.fileData}" class="w-full h-full object-cover">` : `<div class="bg-blue-600 text-white text-[10px] font-bold uppercase w-full h-full flex items-center justify-center">VID</div>`}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-blue-600 truncate">/${item.project}</span>
+                            <span class="text-[10px] text-slate-400">${item.timestamp.slice(11, 16)}</span>
+                        </div>
+                        <p class="text-xs font-medium text-slate-800 truncate">${item.fileName}</p>
+                        <p class="text-[11px] text-slate-500 truncate">Folder: ${item.category}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Drive Navigation Functions
+        function goToRoot() {
+            currentProjectFolder = null;
+            currentCategoryFolder = null;
+            renderDriveExplorer();
+        }
+
+        function openProjectFolder(projectName) {
+            currentProjectFolder = projectName;
+            currentCategoryFolder = null;
+            renderDriveExplorer();
+        }
+
+        function openCategoryFolder(categoryName) {
+            currentCategoryFolder = categoryName;
+            renderDriveExplorer();
+        }
+
+        function renderBreadcrumb() {
+            const container = document.getElementById('breadcrumb-container');
+            let html = '';
+
+            if (currentProjectFolder) {
+                html += `<span class="text-slate-400">/</span> <button onclick="openProjectFolder('${currentProjectFolder}')" class="hover:text-blue-600 font-medium">${currentProjectFolder}</button>`;
+            }
+            if (currentCategoryFolder) {
+                html += `<span class="text-slate-400">/</span> <span class="font-semibold text-slate-800">${currentCategoryFolder}</span>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Render Drive Explorer Grid
+        function renderDriveExplorer() {
+            renderBreadcrumb();
+            const grid = document.getElementById('drive-grid');
+            const searchVal = document.getElementById('drive-search').value.toLowerCase();
+
+            // If searching across all files
+            if (searchVal.trim() !== '') {
+                const matchedFiles = evidences.filter(item => 
+                    item.fileName.toLowerCase().includes(searchVal) ||
+                    item.project.toLowerCase().includes(searchVal) ||
+                    item.category.toLowerCase().includes(searchVal) ||
+                    item.description.toLowerCase().includes(searchVal) ||
+                    item.sender.toLowerCase().includes(searchVal)
+                );
+
+                if (matchedFiles.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 italic">Tidak ada file yang cocok dengan pencarian "${searchVal}".</div>`;
+                    return;
+                }
+
+                grid.innerHTML = matchedFiles.map(item => renderFileCard(item)).join('');
+                lucide.createIcons();
+                return;
+            }
+
+            // LEVEL 1: ROOT -> Show Project Folders
+            if (!currentProjectFolder) {
+                const projects = [...new Set(evidences.map(e => e.project))];
+                if (projects.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 italic">Drive kosong. Belum ada folder proyek yang dibuat.</div>`;
+                    return;
+                }
+
+                grid.innerHTML = projects.map(proj => {
+                    const count = evidences.filter(e => e.project === proj).length;
+                    return `
+                        <div onclick="openProjectFolder('${proj}')" class="group bg-slate-50 hover:bg-blue-50/50 border border-slate-200 hover:border-blue-300 rounded-2xl p-4 cursor-pointer transition flex items-center space-x-3.5 shadow-sm">
+                            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition flex-shrink-0 shadow-sm">
+                                <i data-lucide="folder" class="w-6 h-6 fill-amber-200"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h4 class="font-bold text-slate-900 text-sm truncate group-hover:text-blue-600 transition">${proj}</h4>
+                                <p class="text-xs text-slate-500">${count} file / sub-folder</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+                return;
+            }
+
+            // LEVEL 2: PROJECT FOLDER -> Show Category Sub-Folders
+            if (currentProjectFolder && !currentCategoryFolder) {
+                const projectItems = evidences.filter(e => e.project === currentProjectFolder);
+                const categories = [...new Set(projectItems.map(e => e.category))];
+
+                if (categories.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 italic">Folder proyek ini kosong.</div>`;
+                    return;
+                }
+
+                grid.innerHTML = categories.map(cat => {
+                    const count = projectItems.filter(e => e.category === cat).length;
+                    return `
+                        <div onclick="openCategoryFolder('${cat}')" class="group bg-slate-50 hover:bg-blue-50/50 border border-slate-200 hover:border-blue-300 rounded-2xl p-4 cursor-pointer transition flex items-center space-x-3.5 shadow-sm">
+                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition flex-shrink-0 shadow-sm">
+                                <i data-lucide="folder-tree" class="w-6 h-6"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <h4 class="font-bold text-slate-900 text-sm truncate group-hover:text-blue-600 transition">${cat}</h4>
+                                <p class="text-xs text-slate-500">${count} file evidence</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+                return;
+            }
+
+            // LEVEL 3: CATEGORY SUB-FOLDER -> Show Files
+            if (currentProjectFolder && currentCategoryFolder) {
+                const files = evidences.filter(e => e.project === currentProjectFolder && e.category === currentCategoryFolder);
+
+                if (files.length === 0) {
+                    grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 italic">Belum ada file dalam kategori ini.</div>`;
+                    return;
+                }
+
+                grid.innerHTML = files.map(item => renderFileCard(item)).join('');
+                lucide.createIcons();
+            }
+        }
+
+        function renderFileCard(item) {
+            return `
+                <div class="bg-white border border-slate-200 hover:border-blue-400 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition flex flex-col group">
+                    <div class="h-36 bg-slate-100 relative overflow-hidden flex items-center justify-center cursor-pointer" onclick="openModal('${item.id}')">
+                        ${item.fileType === 'image' ? 
+                            `<img src="${item.fileData}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">` : 
+                            `<div class="bg-slate-900 text-white w-full h-full flex flex-col items-center justify-center space-y-1"><i data-lucide="video" class="w-8 h-8 text-blue-400"></i><span class="text-[10px] font-mono">VIDEO FILE</span></div>`
+                        }
+                        <span class="absolute top-2 left-2 bg-slate-900/70 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded uppercase">${item.fileType}</span>
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+                        <div>
+                            <h5 class="font-bold text-slate-900 text-xs truncate" title="${item.fileName}">${item.fileName}</h5>
+                            <p class="text-[11px] text-slate-500 mt-0.5 truncate">Oleh: ${item.sender}</p>
+                            <p class="text-[10px] text-slate-400 mt-1 font-mono">${item.timestamp}</p>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                            <button onclick="openModal('${item.id}')" class="text-xs text-blue-600 hover:underline font-medium flex items-center space-x-1">
+                                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                                <span>Preview</span>
+                            </button>
+                            <button onclick="deleteEvidence('${item.id}')" title="Hapus File" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Modal Media Viewer
+        function openModal(id) {
+            const item = evidences.find(e => e.id === id);
+            if (!item) return;
+
+            document.getElementById('modal-title').textContent = `${item.fileName}`;
+            document.getElementById('modal-subtitle').textContent = `Proyek: ${item.project} | Kategori: ${item.category} | Pengirim: ${item.sender}`;
+            document.getElementById('modal-meta').textContent = `Lokasi: ${item.location} | Waktu: ${item.timestamp}`;
+
+            const area = document.getElementById('modal-content-area');
+            if (item.fileType === 'image') {
+                area.innerHTML = `<img src="${item.fileData}" class="max-h-[50vh] object-contain rounded-lg shadow-md">`;
+            } else {
+                area.innerHTML = `<video controls autoplay class="max-h-[50vh] rounded-lg shadow-md"><source src="${item.fileData}"></video>`;
+            }
+
+            document.getElementById('media-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('media-modal').classList.add('hidden');
+            document.getElementById('modal-content-area').innerHTML = '';
+        }
+
+        // Delete Evidence
+        function deleteEvidence(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus file evidence ini dari Google Drive?')) {
+                evidences = evidences.filter(e => e.id !== id);
+                saveData();
+                renderDriveExplorer();
+                renderRecentUploads();
+                showToast('Berhasil Dihapus', 'File telah dihapus dari direktori Drive.', 'success');
+            }
+        }
+
+        // Reset Demo Data
+        function resetData() {
+            if (confirm('Reset seluruh data ke demo awal Google Drive?')) {
+                localStorage.removeItem('drive_project_evidences');
+                evidences = [];
+                initDemoDataIfNeeded();
+                goToRoot();
+                renderRecentUploads();
+                showToast('Reset Berhasil', 'Struktur folder Google Drive dikembalikan ke kondisi awal.', 'success');
+            }
+        }
+
+        // Toast Notification System
+        function showToast(title, desc, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-desc').textContent = desc;
+
+            if (type === 'success') {
+                icon.innerHTML = `<div class="bg-emerald-500 text-white p-2 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>`;
+            } else {
+                icon.innerHTML = `<div class="bg-red-500 text-white p-2 rounded-xl"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></div>`;
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
